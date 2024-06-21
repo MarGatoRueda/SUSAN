@@ -6,10 +6,9 @@ Adafruit_AS7341 as7341;
 const int ledPin1 = 3; // Refraction LED
 const int ledPin2 = 6; // Bottom LED
 
-const int intensity1 = 0; // Set the intensity for LED 1 (0-100): Refraction LED
+const int intensity1 = 100; // Set the intensity for LED 1 (0-100): Refraction LED
 const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Bottom LED
 bool msg = false;
-uint16_t ref_cal;
 
 void setup() {
   // Set the LED pins as outputs
@@ -33,7 +32,6 @@ void setup() {
   analogWrite(ledPin1, intensity1);
   analogWrite(ledPin2, 0);
   delay(5000);
-  ref_cal = measure();
 }
 
 void loop() {
@@ -42,7 +40,7 @@ void loop() {
   int pwmValue2 = map(intensity2, 0, 100, 0, 255);
   
   // Set the PWM values to control LED intensities
-  analogWrite(ledPin1, 0);
+  analogWrite(ledPin1, pwmValue1);
   analogWrite(ledPin2, pwmValue2);
   if (Serial.available()){
     char c = Serial.read();
