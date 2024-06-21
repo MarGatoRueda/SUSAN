@@ -2,12 +2,12 @@
 
 Adafruit_AS7341 as7341;
 
-// Connect pins A3 and A6 to the LED'S, one for each
-const int ledPin1 = A3; // Bottom LED
-const int ledPin2 = A6; // Refraction LED
+// Define the LED pins, D3 and D6, for the two LEDs
+const int ledPin1 = 3; // Refraction LED
+const int ledPin2 = 6; // Bottom LED
 
-const int intensity1 = 100; // Set the intensity for LED 1 (0-100): Bottom LED
-const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Refraction LED
+const int intensity1 = 0; // Set the intensity for LED 1 (0-100): Refraction LED
+const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Bottom LED
 bool msg = false;
 
 void setup() {
