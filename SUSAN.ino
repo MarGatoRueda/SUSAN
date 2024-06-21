@@ -9,6 +9,7 @@ const int ledPin2 = 6; // Bottom LED
 const int intensity1 = 0; // Set the intensity for LED 1 (0-100): Refraction LED
 const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Bottom LED
 bool msg = false;
+uint16_t ref_cal;
 
 void setup() {
   // Set the LED pins as outputs
@@ -27,16 +28,21 @@ void setup() {
   as7341.setGain(AS7341_GAIN_64X);
   
   pinMode(5, OUTPUT);
+
+  // Turn on the refraction LED, turn off the bottom LED, wait for 5 seconds and record the data
+  analogWrite(ledPin1, intensity1);
+  analogWrite(ledPin2, 0);
+  delay(5000);
+  ref_cal = measure();
 }
 
 void loop() {
-  // Enable th
   // Map the intensity values from 0-100 to the range of 0-255 (PWM range)
   int pwmValue1 = map(intensity1, 0, 100, 0, 255);
   int pwmValue2 = map(intensity2, 0, 100, 0, 255);
   
   // Set the PWM values to control LED intensities
-  analogWrite(ledPin1, pwmValue1);
+  analogWrite(ledPin1, 0);
   analogWrite(ledPin2, pwmValue2);
   if (Serial.available()){
     char c = Serial.read();
