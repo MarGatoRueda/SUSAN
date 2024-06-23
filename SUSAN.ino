@@ -1,71 +1,71 @@
+#include <Wire.h>
 #include <Adafruit_AS7341.h>
 
-Adafruit_AS7341 as7341;
-
-// Define the LED pins, D3 and D6, for the two LEDs
-const int ledPin1 = 3; // Refraction LED
-const int ledPin2 = 6; // Bottom LED
+#define ledPin1 3 // Refraction LED
+#define ledPin2 6 // Bottom LED
 
 const int intensity1 = 100; // Set the intensity for LED 1 (0-100): Refraction LED
 const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Bottom LED
 bool msg = false;
 
-void setup() {
-  // Set the LED pins as outputs
-  pinMode(ledPin1, OUTPUT);
-  pinMode(ledPin2, OUTPUT);
+// Map the intensity values from 0-100 to the range of 0-255 (PWM range)
+int pwmValue1 = map(intensity1, 0, 100, 0, 255);
+int pwmValue2 = map(intensity2, 0, 100, 0, 255);
 
-  // Start the serial communication
+Adafruit_AS7341 as7341;
+
+void setup() {
   Serial.begin(115200);
 
-  if (!as7341.begin()){
-    Serial.println("No AS7341 found");
-    while (1) {delay(10);}
+  if (!as7341.begin()) {
+    Serial.println("AS7341 sensor not found");
+    while (1);
   }
-  as7341.setATIME(200);
-  as7341.setASTEP(999);
-  as7341.setGain(AS7341_GAIN_64X);
-  
-  pinMode(5, OUTPUT);
 
-  // Turn on the refraction LED, turn off the bottom LED, wait for 5 seconds and record the data
-  analogWrite(ledPin1, intensity1);
-  analogWrite(ledPin2, 0);
-  delay(5000);
+// Put the sensor into standby mode initially
+  as7341.enableSpectralMeasurement(false);
 }
 
 void loop() {
-  // Map the intensity values from 0-100 to the range of 0-255 (PWM range)
-  int pwmValue1 = map(intensity1, 0, 100, 0, 255);
-  int pwmValue2 = map(intensity2, 0, 100, 0, 255);
-  
-  // Set the PWM values to control LED intensities
-  analogWrite(ledPin1, pwmValue1);
-  analogWrite(ledPin2, pwmValue2);
-  if (Serial.available()){
-    char c = Serial.read();
-    if (c == 'm'){
-      msg = true;
-      digitalWrite(5, HIGH);
-      while (msg) {
-        measure();
-        c = Serial.read();
-        if (c == 's'){
-          msg = false;
-          digitalWrite(5, LOW);
-        }
-      }
+  // Check for a command from the serial monitor
+  if (Serial.available()) {
+    char command = Serial.read();
+    if (command == 'w') {
+      wakeUpAndMeasure();
     }
   }
 }
 
-void measure(){
-  uint16_t readings[12];
 
-  if (!as7341.readAllChannels(readings)){
-    Serial.println("Failed to read all channels");
-    return;
+void wakeUpAndMeasure() {
+  // Turn on the refractive LED and take a reading
+  analogWrite(ledPin1, pwmValue1);
+  delay(2000);
+  printSensorData();
+  analogWrite(ledPin1, 0);
+  Serial.println("Refractive LED measurements done.");
+
+  // Turn on the backlight LED and take 10 readings
+  analogWrite(ledPin2, pwmValue2);
+  for (int i = 0; i < 10; i++) {
+    printSensorData();
+    delay(500); // Adjust delay if needed
   }
+  analogWrite(ledPin2, 0);
+
+  // Send confirmation and go back to sleep
+  Serial.println("Done");
+  // Turn off the sensor and LEDs to save power
+  as7341.enableSpectralMeasurement(false);
+}
+
+void printSensorData() {
+    uint16_t readings[12];
+    if (!as7341.readAllChannels(readings)) {
+        Serial.println("Error reading sensor data");
+        return;
+    }
+    
   Serial.print(readings[0]); //ADC0/F1 415nm
   Serial.print(", ");
   Serial.print(readings[1]); //ADC1/F2 445nm
@@ -86,4 +86,5 @@ void measure(){
   Serial.print(", ");
   Serial.print(readings[11]);//ADC5/NIR
   Serial.println(); //Newline for new data
+
 }

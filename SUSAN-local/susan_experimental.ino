@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include <Adafruit_AS7341.h>
-#include <RocketScream_LowPowerAVRZero.h>
+
 
 #define BACKLIGHT_LED_PIN 6
 #define REFRACTIVE_LED_PIN 3
@@ -8,7 +8,7 @@
 Adafruit_AS7341 as7341;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   pinMode(BACKLIGHT_LED_PIN, OUTPUT);
   pinMode(REFRACTIVE_LED_PIN, OUTPUT);
   digitalWrite(BACKLIGHT_LED_PIN, LOW);
@@ -19,11 +19,12 @@ void setup() {
     while (1);
   }
 
-  // Go to sleep initially
-  enterSleep();
+// Put the sensor into standby mode initially
+  as7341.enableSpectralMeasurement(false);
 }
 
 void loop() {
+  // Check for a command from the serial monitor
   if (Serial.available()) {
     char command = Serial.read();
     if (command == 'W') {
@@ -32,10 +33,6 @@ void loop() {
   }
 }
 
-void enterSleep() {
-  Serial.println("Sleeping");
-  LowPower.standby();
-}
 
 void wakeUpAndMeasure() {
   // Turn on the refractive LED and take a reading
@@ -56,7 +53,10 @@ void wakeUpAndMeasure() {
 
   // Send confirmation and go back to sleep
   Serial.println("Done");
-  enterSleep();
+  // Turn off the sensor and LEDs to save power
+  as7341.enableSpectralMeasurement(false);
+  digitalWrite(REFRACTIVE_LED_PIN, LOW);
+  digitalWrite(BACKLIGHT_LED_PIN, LOW);
 }
 
 void printSensorData() {
