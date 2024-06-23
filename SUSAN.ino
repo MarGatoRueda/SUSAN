@@ -47,6 +47,7 @@ void wakeUpAndMeasure() {
 
   // Turn on the backlight LED and take 10 readings
   analogWrite(ledPin2, pwmValue2);
+  delay(2000);
   for (int i = 0; i < 10; i++) {
     printSensorData();
     delay(500); // Adjust delay if needed

@@ -5,14 +5,17 @@ from datetime import datetime
 import plotext as pltx
 import csv
 
-print('Spectrometer Logger v0.1.0')
-print('For Sample Spectrum Analysis\n')
+calibration_data = None
+data = None
+
+print('SUSAN User Terminal v1')
+print('Made by Marcelo Gatica Ruedlinger at MWL\n')
 
 com = str(input('Choose your Arduino Port: '))
 ser = serial.Serial(com, 115200)
 
 def menu():
-    print('1. Read Data')
+    print('1. Start SUSAN routine')
     print('2. Save Data')
     print('3. Exit')
     choice = int(input('Choose an option: '))
@@ -40,8 +43,7 @@ def read_data():
     
     while True:
         if ser.in_waiting:
-            line = ser.readline().decode('utf-8')
-            print(f"Received line: {line}")  # Debug print
+            line = ser.readline().decode('utf-8').rstrip('\r\n')
 
             if reading_calibration:
                 if 'Refractive LED measurements done.' in line:
@@ -56,7 +58,7 @@ def read_data():
                         rawdata = rawdata + ',' + line
                         calibration_data = np.append(calibration_data, np.array([rawdata.split(',')]), axis=0)
             elif reading_data:
-                if 'Done.' in line:
+                if 'Done' in line:
                     print('Routine finished, remember to save your data.')
                     menu()
                     break
@@ -74,6 +76,14 @@ def timeis():
     return dt_string
 
 def save_data():
+    global calibration_data
+    global data
+
+    if calibration_data is None or data is None:
+        print("No data to save. Please run the SUSAN routine first.")
+        menu()
+        return
+    
     path = os.path.abspath(os.getcwd()) + '/Spectrogram Data'
     if not os.path.exists(path):
         os.makedirs(path)
@@ -88,6 +98,7 @@ def save_data():
     writer.writerows(calibration_data)
     writer.writerows(data)
     f.close()
+    print('Data saved successfully.')
     menu()
 
 def plot_data(inputdata):
