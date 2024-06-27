@@ -21,6 +21,10 @@ void setup() {
     Serial.println("AS7341 sensor not found");
     while (1);
   }
+  as7341.setATIME(100);
+  as7341.setASTEP(999);
+  as7341.setGain(AS7341_GAIN_256X);
+
 
 // Put the sensor into standby mode initially
   as7341.enableSpectralMeasurement(false);
@@ -50,11 +54,10 @@ void wakeUpAndMeasure() {
   delay(2000);
   for (int i = 0; i < 10; i++) {
     printSensorData();
-    delay(500); // Adjust delay if needed
+    delay(500);
   }
   analogWrite(ledPin2, 0);
 
-  // Send confirmation and go back to sleep
   Serial.println("Done");
   // Turn off the sensor and LEDs to save power
   as7341.enableSpectralMeasurement(false);
