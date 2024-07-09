@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 import plotext as pltx
 import csv
+import time
 
 calibration_data = None
 data = None
@@ -13,6 +14,9 @@ print('Made by Marcelo Gatica Ruedlinger at MWL\n')
 
 com = str(input('Choose your Arduino Port: '))
 ser = serial.Serial(com, 115200)
+time.sleep(2)
+ser.flushInput()
+ser.flushOutput()
 
 def menu():
     print('1. Start SUSAN routine')
@@ -37,9 +41,8 @@ def read_data():
     global data
     calibration_data = np.array([["time", "415nm", "445nm", "480nm", "515nm", "555nm", "590nm", "630nm", "680nm", "Clear", "NIR"]])
     data = np.array([["time", "415nm", "445nm", "480nm", "515nm", "555nm", "590nm", "630nm", "680nm", "Clear", "NIR"]])
-    ser.write('w'.encode('utf-8'))
     print('Wake-up command sent. Waiting for data...')
-
+    ser.write('w'.encode('utf-8'))
     reading_calibration = True
     reading_data = False
     
