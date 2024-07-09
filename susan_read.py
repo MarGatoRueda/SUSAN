@@ -136,7 +136,7 @@ def pwm_test():
             if 'Done' in line:
                 print('PWM Test finished, remember to save your data.')
                 menu()
-                breakc
+                break
             else:
                 if ',' in line:
                     rawdata = timeis()
