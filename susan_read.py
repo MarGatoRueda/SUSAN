@@ -18,6 +18,7 @@ def menu():
     print('1. Start SUSAN routine')
     print('2. Save Data')
     print('3. Exit')
+    print('4. PWM Test')
     choice = int(input('Choose an option: '))
     if choice == 1:
         read_data()
@@ -25,6 +26,8 @@ def menu():
         save_data()
     elif choice == 3:
         exit()
+    elif choice == 4:
+        pwm_test()
     else:
         print('Invalid Option')
         menu()
@@ -34,7 +37,6 @@ def read_data():
     global data
     calibration_data = np.array([["time", "415nm", "445nm", "480nm", "515nm", "555nm", "590nm", "630nm", "680nm", "Clear", "NIR"]])
     data = np.array([["time", "415nm", "445nm", "480nm", "515nm", "555nm", "590nm", "630nm", "680nm", "Clear", "NIR"]])
-    
     ser.write('w'.encode('utf-8'))
     print('Wake-up command sent. Waiting for data...')
 
@@ -79,7 +81,7 @@ def save_data():
     global calibration_data
     global data
 
-    if calibration_data is None or data is None:
+    if calibration_data is None and data is None:
         print("No data to save. Please run the SUSAN routine first.")
         menu()
         return
@@ -111,4 +113,32 @@ def plot_data(inputdata):
     pltx.show()
     pltx.sleep(0.01)
 
+def pwm_test():
+    # Test PWM, sends the command to the Arduino to test the PWM. Plot the received data using plot_data, and save it as numpy array, where
+    # the first column is the time, the second column is the PWM value and the next columns are the color values.
+    global data
+    global calibration_data
+    calibration_data = np.array([["time", "415nm", "445nm", "480nm", "515nm", "555nm", "590nm", "630nm", "680nm", "Clear", "NIR"]])
+    # Leave the calibration data empty, as it is not needed for the PWM test.
+    data = np.array([["time", "415nm", "445nm", "480nm", "515nm", "555nm", "590nm", "630nm", "680nm", "Clear", "NIR"]])
+
+    ser.write('p'.encode('utf-8'))
+    print('PWM Test command sent. Waiting for data...')
+    reading_data = True
+
+    while True:
+        if ser.in_waiting:
+            line = ser.readline().decode('utf-8').rstrip('\r\n')
+
+            if 'Done' in line:
+                print('PWM Test finished, remember to save your data.')
+                menu()
+                breakc
+            else:
+                if ',' in line:
+                    rawdata = timeis()
+                    spectnum = [int(i) for i in line.split(',')]
+                    plot_data(spectnum)
+                    rawdata = rawdata + ',' + line
+                    data = np.append(data, np.array([rawdata.split(',')]), axis=0)
 menu()

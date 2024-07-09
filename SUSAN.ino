@@ -4,7 +4,7 @@
 #define ledPin1 3 // Refraction LED
 #define ledPin2 6 // Bottom LED
 
-const int intensity1 = 100; // Set the intensity for LED 1 (0-100): Refraction LED
+const int intensity1 = 15; // Set the intensity for LED 1 (0-100): Refraction LED
 const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Bottom LED
 bool msg = false;
 
@@ -21,9 +21,9 @@ void setup() {
     Serial.println("AS7341 sensor not found");
     while (1);
   }
-  as7341.setATIME(100);
-  as7341.setASTEP(999);
-  as7341.setGain(AS7341_GAIN_256X);
+  as7341.setATIME(1000);
+  as7341.setASTEP(1200);
+  as7341.setGain(AS7341_GAIN_512X);
 
 
 // Put the sensor into standby mode initially
@@ -37,9 +37,24 @@ void loop() {
     if (command == 'w') {
       wakeUpAndMeasure();
     }
+    else if (command == 'p') {
+      PWMTest();
   }
 }
+}
 
+void PWMTest() {
+  // Using the refractive LED, cycle through the intensity values from 0-100 of pwmValue1, one step every 2 seconds.
+  // Print the sensor data for each intensity value.
+  for (int i = 0; i <= 100; i++) {
+    pwmValue2 = map(i, 0, 100, 0, 255);
+    analogWrite(ledPin2, pwmValue2);
+    delay(2000);
+    printSensorData();
+  }
+  analogWrite(ledPin2, 0);
+  Serial.println("Done");
+}
 
 void wakeUpAndMeasure() {
   // Turn on the refractive LED and take a reading
