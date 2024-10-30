@@ -10,7 +10,7 @@ calibration_data = None
 data = None
 
 print('SUSAN User Terminal v1')
-print('Made by Marcelo Gatica Ruedlinger at MWL\n')
+print('Made at MWL\n')
 
 com = str(input('Choose your Arduino Port: '))
 ser = serial.Serial(com, 115200)

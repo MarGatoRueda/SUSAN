@@ -1,16 +1,21 @@
 #include <Wire.h>
 #include <Adafruit_AS7341.h>
 
-#define ledPin1 3 // Refraction LED
-#define ledPin2 6 // Bottom LED
+// Define the pins for the LEDs
+const int ledPin1 = 3; // Refraction LED
+const int ledPin2 = 4; // Bottom LED
+const int ledPin3 = 5; // UV LED
 
 const int intensity1 = 15; // Set the intensity for LED 1 (0-100): Refraction LED
 const int intensity2 = 100; // Set the intensity for LED 2 (0-100): Bottom LED
+const int intensity3 = 100; // Set the intensity for LED 3 (0-100): UV LED
+
 bool msg = false;
 
 // Map the intensity values from 0-100 to the range of 0-255 (PWM range)
 int pwmValue1 = map(intensity1, 0, 100, 0, 255);
 int pwmValue2 = map(intensity2, 0, 100, 0, 255);
+int pwmValue3 = map(intensity3, 0, 100, 0, 255);
 
 Adafruit_AS7341 as7341;
 
@@ -23,7 +28,7 @@ void setup() {
   }
   as7341.setATIME(1000);
   as7341.setASTEP(1200);
-  as7341.setGain(AS7341_GAIN_512X);
+  as7341.setGain(AS7341_GAIN_8X);
 
 
 // Put the sensor into standby mode initially
@@ -57,6 +62,8 @@ void PWMTest() {
 }
 
 void wakeUpAndMeasure() {
+  
+  as7341.setGain(AS7341_GAIN_8X);
   // Turn on the refractive LED and take a reading
   analogWrite(ledPin1, pwmValue1);
   delay(2000);
@@ -64,14 +71,25 @@ void wakeUpAndMeasure() {
   analogWrite(ledPin1, 0);
   Serial.println("Refractive LED measurements done.");
 
-  // Turn on the backlight LED and take 10 readings
+  // Turn on the backlight LED and take 6 readings
   analogWrite(ledPin2, pwmValue2);
   delay(2000);
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 6; i++) {
     printSensorData();
     delay(500);
   }
   analogWrite(ledPin2, 0);
+  // Increase gain to 128x for UV LED
+  as7341.setGain(AS7341_GAIN_128X);
+  // Turn on the UV LED and take a 4 readings
+  analogWrite(ledPin3, pwmValue3);
+  delay(2000);
+  for (int i = 0; i < 4; i++) {
+    printSensorData();
+    delay(500);
+  }
+  analogWrite(ledPin3, 0);
+
 
   Serial.println("Done");
   // Turn off the sensor and LEDs to save power
