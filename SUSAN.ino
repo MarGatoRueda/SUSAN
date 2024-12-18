@@ -79,6 +79,8 @@ void wakeUpAndMeasure() {
     delay(500);
   }
   analogWrite(ledPin2, 0);
+
+  Serial.println("Changing to UV measurements");
   // Increase gain to 128x for UV LED
   as7341.setGain(AS7341_GAIN_128X);
   // Turn on the UV LED and take a 4 readings
@@ -122,6 +124,6 @@ void printSensorData() {
   Serial.print(readings[10]);//ADC4/Clear
   Serial.print(", ");
   Serial.print(readings[11]);//ADC5/NIR
-  Serial.println(); //Newline for new data
+  Serial.println(); //
 
 }

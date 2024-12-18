@@ -6,13 +6,24 @@ import plotext as pltx
 import csv
 import time
 
+import serial.tools.list_ports
+
+ports = list(serial.tools.list_ports.comports())
+print("Ports detected:")
+for i, port in enumerate(ports):
+    print(f"{i+1}: {port.device}")
+
+choice = input("Please choose port number connected to SUSAN: ")
+com = ports[int(choice)-1].device  # Get the chosen device port
+
+
 calibration_data = None
 data = None
 
 print('SUSAN User Terminal v1')
 print('Made at MWL\n')
 
-com = str(input('Choose your Arduino Port: '))
+#com = str(input('Choose your Arduino Port: '))
 ser = serial.Serial(com, 115200)
 time.sleep(2)
 ser.flushInput()
