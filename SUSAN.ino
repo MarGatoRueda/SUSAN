@@ -3,7 +3,7 @@
 
 // Define the pins for the LEDs
 const int ledPin1 = 3; // Refraction LED
-const int ledPin2 = 4; // Bottom LED
+const int ledPin2 = 6; // Bottom LED
 const int ledPin3 = 5; // UV LED
 
 const int intensity1 = 15; // Set the intensity for LED 1 (0-100): Refraction LED
@@ -49,16 +49,15 @@ void loop() {
 }
 
 void PWMTest() {
-  // Using the refractive LED, cycle through the intensity values from 0-100 of pwmValue1, one step every 2 seconds.
-  // Print the sensor data for each intensity value.
-  for (int i = 0; i <= 100; i++) {
-    pwmValue2 = map(i, 0, 100, 0, 255);
-    analogWrite(ledPin2, pwmValue2);
-    delay(2000);
-    printSensorData();
-  }
-  analogWrite(ledPin2, 0);
-  Serial.println("Done");
+  // Cycle through PWM values for the Bottom Led, sending a reading at each step
+    for (int i = 0; i <= 255; i++) {
+        analogWrite(ledPin2, i);
+        delay(100);
+        printSensorData();
+    }
+    Serial.println("Done");
+  // Turn off the sensor and LEDs to save power
+    as7341.enableSpectralMeasurement(false);
 }
 
 void wakeUpAndMeasure() {
