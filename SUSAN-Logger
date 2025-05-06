@@ -1,0 +1,170 @@
+import serial
+import serial.tools.list_ports
+import time
+import csv
+from datetime import datetime
+import re
+import plotext as pltx
+
+# Output CSV file
+OUTPUT_CSV = 'lora_data.csv'
+BAUD_RATE = 9600
+
+def list_serial_ports():
+    """List all available serial ports and return the user's selection."""
+    ports = serial.tools.list_ports.comports()
+    if not ports:
+        print("No serial ports found.")
+        return None
+    
+    print("\nAvailable serial ports:")
+    port_list = []
+    for i, port in enumerate(ports):
+        print(f"{i+1}: {port.device} - {port.description}")
+        port_list.append(port.device)
+    
+    while True:
+        try:
+            choice = input("\nEnter the number of the port with the Wio E5 (e.g., 1): ")
+            choice = int(choice) - 1
+            if 0 <= choice < len(port_list):
+                return port_list[choice]
+            else:
+                print(f"Please enter a number between 1 and {len(port_list)}.")
+        except ValueError:
+            print("Please enter a valid number.")
+
+def setup_lora(ser):
+    """Configure Wio E5 for LoRa reception."""
+    commands = [
+        'AT+MODE=TEST',
+        'AT+TEST=RFCFG,915,SF12,125,12,15,14,ON,OFF,OFF',
+        'AT+TEST=RXLRPKT'
+    ]
+    for cmd in commands:
+        ser.write(f'{cmd}\r\n'.encode())
+        time.sleep(1)  # Wait for command processing
+        while ser.in_waiting:
+            print(ser.readline().decode('utf-8').strip())
+
+def hex_to_ascii(hex_string):
+    """Convert hex string to ASCII."""
+    try:
+        if len(hex_string) % 2 != 0:
+            print("Invalid hex string length")
+            return ""
+        ascii_str = ""
+        for i in range(0, len(hex_string), 2):
+            hex_pair = hex_string[i:i+2]
+            ascii_str += chr(int(hex_pair, 16))
+        return ascii_str
+    except Exception as e:
+        print(f"Error converting hex to ASCII: {e}")
+        return ""
+
+def initialize_csv():
+    """Create CSV file with headers if it doesn't exist."""
+    with open(OUTPUT_CSV, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        # Write header if file is empty
+        if csvfile.tell() == 0:
+            writer.writerow([
+                'Timestamp', 'Mode',
+                'F1_415nm', 'F2_445nm', 'F3_480nm', 'F4_515nm',
+                'F5_555nm', 'F6_590nm', 'F7_630nm', 'F8_680nm',
+                'Clear', 'NIR', 'RSSI', 'SNR'
+            ])
+
+def log_data(timestamp, mode, readings, rssi, snr):
+    """Log data to CSV file."""
+    with open(OUTPUT_CSV, 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([
+            timestamp, mode,
+            readings[0], readings[1], readings[2], readings[3],
+            readings[4], readings[5], readings[6], readings[7],
+            readings[8], readings[9], rssi, snr
+        ])
+
+def plot_data(readings, mode):
+    """Plot sensor data as a bar chart in the terminal."""
+    pltx.clt()
+    labels = ["415nm", "445nm", "480nm", "515nm", "555nm",
+              "590nm", "630nm", "680nm", "Clear", "NIR"]
+    colors = [93, 'blue+', 'cyan+', 46, 118, 220, 208, 196, 255, 1]
+    pltx.simple_bar(labels, readings, width=100, title=f"Color Spectrum - {mode}", color=colors)
+    pltx.show()
+    pltx.sleep(0.01)
+
+def main():
+    print("LoRa Receiver Terminal")
+    print("Listening for SUSAN data\n")
+
+    # List and select serial port
+    selected_port = list_serial_ports()
+    if not selected_port:
+        print("Exiting due to no available ports.")
+        return
+
+    # Initialize CSV file
+    initialize_csv()
+
+    # Open serial port
+    try:
+        with serial.Serial(selected_port, BAUD_RATE, timeout=1) as ser:
+            print(f"Connected to {selected_port}")
+            ser.flushInput()
+            ser.flushOutput()
+            setup_lora(ser)
+            print("Wio E5 configured for reception. Waiting for data...")
+
+            metadata = None
+            while True:
+                if ser.in_waiting:
+                    line = ser.readline().decode('utf-8').strip()
+                    if not line:
+                        continue
+
+                    # Handle metadata line: +TEST: LEN:..., RSSI:..., SNR:...
+                    if line.startswith('+TEST: LEN'):
+                        match = re.match(r'\+TEST: LEN:(\d+), RSSI:([-]?\d+), SNR:([-]?\d+)', line)
+                        if match:
+                            metadata = {'rssi': match.group(2), 'snr': match.group(3)}
+                            print(f"Metadata: {line}")
+                        else:
+                            print(f"Invalid metadata format: {line}")
+
+                    # Handle data line: +TEST: RX "HEX STRING"
+                    elif line.startswith('+TEST: RX'):
+                        match = re.match(r'\+TEST: RX "([0-9A-Fa-f]+)"', line)
+                        if match and metadata:
+                            hex_data = match.group(1)
+                            ascii_data = hex_to_ascii(hex_data)
+                            if ascii_data:
+                                # Parse CSV: mode,F1,F2,F3,F4,F5,F6,F7,F8,Clear,NIR
+                                try:
+                                    fields = ascii_data.split(',')
+                                    if len(fields) == 11:
+                                        mode = fields[0]
+                                        readings = [int(x) for x in fields[1:]]
+                                        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                        log_data(timestamp, mode, readings, metadata['rssi'], metadata['snr'])
+                                        print(f"Received: {ascii_data}")
+                                        plot_data(readings, mode)
+                                    else:
+                                        print(f"Invalid CSV format: {ascii_data}")
+                                except ValueError as e:
+                                    print(f"Error parsing CSV: {e}")
+                            metadata = None  # Reset metadata after processing
+                        else:
+                            print(f"Invalid RX format or missing metadata: {line}")
+
+    except serial.SerialException as e:
+        print(f"Serial error: {e}")
+    except KeyboardInterrupt:
+        print("\nStopped by user. Data saved to lora_data.csv")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+if __name__ == '__main__':
+    main()

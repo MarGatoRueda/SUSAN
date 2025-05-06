@@ -74,7 +74,7 @@ def read_data():
                         rawdata = rawdata + ',' + line
                         calibration_data = np.append(calibration_data, np.array([rawdata.split(',')]), axis=0)
             elif reading_data:
-                if 'Done' in line:
+                if 'All measurements done.' in line:
                     print('Routine finished, remember to save your data.')
                     menu()
                     break
